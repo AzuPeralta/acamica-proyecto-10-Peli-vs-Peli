@@ -1,13 +1,13 @@
 const express = require('express');
+const cors = require('cors');
 const app = express();
 const controlador = require('../servidor/controladores/controlador');
 
-
+app.use(cors());
 
 app.get('/competencias', controlador.listarCompetencias);
 
-
-
+app.get('/competencias/:id/peliculas', controlador.obtenerPeliculas);
 
 
 

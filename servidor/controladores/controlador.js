@@ -4,18 +4,32 @@ function listarCompetencias(req, res){
     console.log('llegue al controlador');
     let sql = `select * from competencia`
 
-    conexion.query(sql, function(error, resultado){
-        if (error){
-                console.log("Hubo un error en la consulta", error.message);
-                return res.status(404).send("Hubo un error en la consulta");
-        }
-        let response = {
-            'competencias': resultado.length
-        };
-        res.send(JSON.stringify(response))
-    })
+    conexion.query(sql, function(error, resultado, fields){
+        res.json(resultado)
+    });
 }
 
+function obtenerPeliculas(req, res){
+    let idCompetencia = req.params.id;
+
+    conexion.query(`SELECT id FROM competencia WHERE id = ${idCompetencia}`, function(error, resultado, fields){
+        if(resultado.length == 0){
+            return res.status(404).json('No existe la competencia');
+        }
+        let sql = `SELECT pelicula.id, pelicula.titulo, pelicula.poster, competencia.nombre FROM pelicula, competencia where competencias.competencia.id = ${idCompetencia} ORDER BY RAND() LIMIT 2;`
+
+        conexion.query(sql, function(error, resultado, fields){
+        let nombreCompetencia = resultado[0].nombre
+        let response = {
+            'peliculas': resultado,
+            'competencia': nombreCompetencia,
+        };
+        console.log(response)
+        res.json(response)
+    })
+})}
+
 module.exports = {
-    listarCompetencias : listarCompetencias
+    listarCompetencias : listarCompetencias,
+    obtenerPeliculas: obtenerPeliculas,
 }
