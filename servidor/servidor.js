@@ -8,7 +8,8 @@ app.use(cors());
 app.get('/competencias', controlador.listarCompetencias);
 
 app.get('/competencias/:id/peliculas', controlador.obtenerPeliculas);
-
+//app.get('/competencias/:id/voto', controlador.agregarVoto);
+app.post('competencias/:id/voto', controlador.recibirVoto);
 
 
 //seteamos el puerto en el cual va a escuchar los pedidos la aplicación

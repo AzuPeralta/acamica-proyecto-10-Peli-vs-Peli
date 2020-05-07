@@ -105,6 +105,7 @@ function CompetenciasController () {
 	this.votar = function (idCompetencia, idPelicula){
 		// Se arma el objeto data a enviar como body en el POST a la api
 		var data = {'idPelicula': idPelicula};
+		console.log(data);
 		// Se realiza el post a la api
 	    $.post(server+"/competencias/"+idCompetencia+"/voto", data, function(response) {
 	    	// Se redirige al usuario a ver los resultados de la competencia en la que votó
