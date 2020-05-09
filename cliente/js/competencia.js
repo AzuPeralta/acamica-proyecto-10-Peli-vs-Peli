@@ -1,4 +1,5 @@
 // Esta es la ip y puerto en que necesitamos que esté el backend disponible
+//Modificamos la ruta del servidor ya que la ruta asignada no funcionaba para conectar frontend con backend
 var server = 'http://localhost:8080';
 
 function CompetenciasController () {
