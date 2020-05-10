@@ -16,6 +16,10 @@ app.get('/actores', controlador.obtenerActores);
 
 app.post('/competencias', controlador.nuevaCompetencia);
 
+app.delete('/competencias/:id', controlador.eliminarCompetencia);
+
+app.put('/competencias/:id', controlador.editarCompetencia);
+
 app.get('/competencias/:id/peliculas', controlador.obtenerPeliculas);
 
 app.post('/competencias/:id/voto', controlador.recibirVoto);

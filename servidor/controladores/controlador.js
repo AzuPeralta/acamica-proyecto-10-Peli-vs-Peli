@@ -97,28 +97,34 @@ function nuevaCompetencia(req, res){
     let genero = req.body.genero;
     let director = req.body.director;
     let actor = req.body.actor;
-    //console.log(nueva_competencia)
-    let parcialQuery = `INSERT INTO competencia SET `
+    let filtros = {}
 
-    if (nueva_competencia) parcialQuery += `nombre = "${nueva_competencia}", genero_id = null, director_id = null, actor_id = null`
+    if(req.body.nombre) filtros.nombre = nueva_competencia;
+    if(req.body.genero == 0) filtros.genero_id = null;
+    if(req.body.director == 0) filtros.director_id = null;
+    if(req.body.actor == 0) filtros.actor_id = null;
+
+    let parcialQuery = `INSERT INTO competencia SET `;
+
+    if(nueva_competencia) parcialQuery += `nombre = "${filtros.nombre}"`;
 
     if( genero || director || actor) parcialQuery += `, `
 
     if (genero){
         parcialQuery += `genero_id = ${genero}`
     }
-
-    if(director){
-        if(genero) parcialQuery += ` ,`;
+    if (director){
+        if(genero) parcialQuery += `, `;
         parcialQuery += `director_id = ${director}`;
     }
-
     if(actor){
-        if(genero || director) parcialQuery += ` ,`;
+        if(genero || director) parcialQuery += `, `;
         parcialQuery += `actor_id = ${actor}`;
     }
 
     console.log(parcialQuery);
+
+
 
     conexion.query(`SELECT nombre FROM competencia WHERE nombre = "${nueva_competencia}"`, function(error, resultado, fields){
         if(resultado.length !== 0){
@@ -147,6 +153,29 @@ function reiniciarVotos(req, res){
     })
 }
 
+function eliminarCompetencia(req, res){
+    let idCompetencia = req.params.id;
+    let queryTablaVoto = `DELETE from voto where competencia_id = ${idCompetencia}`;
+    let queryTablaCompetencia = `DELETE FROM competencia WHERE id = ${idCompetencia}`;
+
+    conexion.query(queryTablaVoto, function(error, resultado, fields){
+        conexion.query(queryTablaCompetencia, function(err, result, field){
+            res.json(result);
+        })
+    })
+}
+
+function editarCompetencia(req, res){
+    let idCompetencia = req.params.id;
+    let nuevaInfo = req.body.nombre;
+    console.log(nuevaInfo);
+    let sql = `UPDATE competencia SET nombre = "${nuevaInfo}" WHERE id = ${idCompetencia};`
+
+    conexion.query(sql, function(error, resultado, fields){
+        res.json(resultado);
+    })
+}
+
 module.exports = {
     listarCompetencias : listarCompetencias,
     obtenerPeliculas: obtenerPeliculas,
@@ -157,4 +186,6 @@ module.exports = {
     obtenerActores: obtenerActores,
     nuevaCompetencia: nuevaCompetencia,
     reiniciarVotos: reiniciarVotos,
+    eliminarCompetencia: eliminarCompetencia,
+    editarCompetencia: editarCompetencia,
 }
