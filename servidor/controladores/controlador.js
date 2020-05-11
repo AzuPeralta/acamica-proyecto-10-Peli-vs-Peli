@@ -32,10 +32,6 @@ function obtenerPeliculas(req, res){
         let actor = resultado[0].actor_id;
         let sql = `SELECT pelicula.id, pelicula.titulo, pelicula.poster, competencia.nombre FROM `;
 
-        // console.log(genero)
-        // console.log(director)
-        // console.log(actor)
-
         if(genero && director && actor) {
             sql += `competencia JOIN pelicula ON pelicula.genero_id = competencia.genero_id JOIN director_pelicula ON pelicula.id = director_pelicula.pelicula_id
         JOIN actor_pelicula ON pelicula.id = actor_pelicula.pelicula_id
@@ -67,6 +63,7 @@ function obtenerPeliculas(req, res){
 
         sql += `ORDER BY RAND();`
         conexion.query(sql, function(err, result, field){
+            //FALTA VALIDACION POR MENOS DE DOS OPCIONES PARA VOTAR. COMO SE ENVIA MENSAJE A CLIENTE? POR CONSOLA? SE PUEDE PONER UN ALERT?
             if(result.length < 2){
                 console.log("No se puede votar esta competencia por falta de opciones!");
                 return res.status(500).json('No es posible crear esta competencia');
@@ -80,7 +77,6 @@ function obtenerPeliculas(req, res){
             res.json(response)
         })
     })
-        //let sql = `SELECT pelicula.id, pelicula.titulo, pelicula.poster, competencia.nombre FROM pelicula, competencia where competencias.competencia.id = ${idCompetencia} ORDER BY RAND() LIMIT 2;`
 }
 
 function recibirVoto(req, res){
