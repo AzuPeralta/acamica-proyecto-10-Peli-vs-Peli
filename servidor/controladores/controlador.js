@@ -22,21 +22,66 @@ function obtenerCompetencia(req, res){
 function obtenerPeliculas(req, res){
     let idCompetencia = req.params.id;
 
-    conexion.query(`SELECT id FROM competencia WHERE id = ${idCompetencia}`, function(error, resultado, fields){
+    conexion.query(`SELECT * FROM competencia WHERE id = ${idCompetencia}`, function(error, resultado, fields){
+        console.log(resultado)
         if(resultado.length == 0){
             return res.status(404).json('No existe la competencia');
         }
-        let sql = `SELECT pelicula.id, pelicula.titulo, pelicula.poster, competencia.nombre FROM pelicula, competencia where competencias.competencia.id = ${idCompetencia} ORDER BY RAND() LIMIT 2;`
+        let genero = resultado[0].genero_id;
+        let director = resultado[0].director_id;
+        let actor = resultado[0].actor_id;
+        let sql = `SELECT pelicula.id, pelicula.titulo, pelicula.poster, competencia.nombre FROM `;
 
-        conexion.query(sql, function(error, resultado, fields){
-        let nombreCompetencia = resultado[0].nombre
-        let response = {
-            'peliculas': resultado,
-            'competencia': nombreCompetencia,
-        };
-        res.json(response)
+        // console.log(genero)
+        // console.log(director)
+        // console.log(actor)
+
+        if(genero && director && actor) {
+            sql += `competencia JOIN pelicula ON pelicula.genero_id = competencia.genero_id JOIN director_pelicula ON pelicula.id = director_pelicula.pelicula_id
+        JOIN actor_pelicula ON pelicula.id = actor_pelicula.pelicula_id
+        WHERE competencia.id = ${idCompetencia} and director_pelicula.director_id = ${director} and actor_pelicula.actor_id = ${actor} `}
+
+        else if(genero){
+            sql += `competencia JOIN pelicula on pelicula.genero_id = competencia.genero_id WHERE competencia.genero_id = ${genero} `
+        }
+        else if(director){
+           sql += `pelicula join director_pelicula on pelicula.id = director_pelicula.pelicula_id join competencia on director_pelicula.director_id = competencia.director_id
+           where director_pelicula.director_id = ${director} `
+        }
+        else if(actor){
+            sql += `pelicula join actor_pelicula on pelicula.id = actor_pelicula.pelicula_id join competencia on competencia.actor_id = actor_pelicula.actor_id
+            where actor_pelicula.actor_id = ${actor} `
+        }
+        else if(genero && actor){
+            sql += `competencia JOIN pelicula on pelicula.genero_id = competencia.genero_id join actor_pelicula on pelicula.id = actor_pelicula.pelicula_id
+            WHERE competencia.genero_id = ${genero} and actor_pelicula.actor_id = ${actor} `
+        }
+        else if(genero && director){
+            sql += `competencia JOIN pelicula on pelicula.genero_id = competencia.genero_id join director_pelicula on pelicula.id = director_pelicula.pelicula_id
+            WHERE competencia.genero_id = ${genero} and director_pelicula.director_id = ${director} `
+        }
+        else if(actor && director){
+            sql += `pelicula join actor_pelicula on pelicula.id = actor_pelicula.pelicula_id join director_pelicula on pelicula.id = director_pelicula.pelicula_id
+            join competencia on competencia.actor_id = actor_pelicula.actor_id where actor_pelicula.actor_id = ${actor} and director_pelicula.director_id = ${director} `
+        }
+
+        sql += `ORDER BY RAND();`
+        conexion.query(sql, function(err, result, field){
+            if(result.length < 2){
+                console.log("No se puede votar esta competencia por falta de opciones!");
+                return res.status(500).json('No es posible crear esta competencia');
+                //return res.status(500).send("No se puede votar esta competencia por falta de opciones!")
+                }
+            let nombreCompetencia = result[0].nombre
+            let response = {
+                'peliculas': result,
+                'competencia': nombreCompetencia
+            };
+            res.json(response)
+        })
     })
-})}
+        //let sql = `SELECT pelicula.id, pelicula.titulo, pelicula.poster, competencia.nombre FROM pelicula, competencia where competencias.competencia.id = ${idCompetencia} ORDER BY RAND() LIMIT 2;`
+}
 
 function recibirVoto(req, res){
     let idCompetencia = req.params.id
@@ -56,7 +101,6 @@ function recibirVoto(req, res){
                     'idCompetencia': result,
                     'idPelicula': idPelicula,
                 };
-                //console.log(response)
                 res.json(response)
         })
     })
