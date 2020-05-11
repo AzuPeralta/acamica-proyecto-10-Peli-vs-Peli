@@ -8,6 +8,17 @@ function listarCompetencias(req, res){
     });
 }
 
+function obtenerCompetencia(req, res){
+    let idCompetencia = req.params.id;
+    let sql = `select competencia.nombre as nombre, genero.nombre as genero_nombre, actor.nombre as actor_nombre, director.nombre as director_nombre 
+    from competencia left join genero on competencia.genero_id = genero.id left join actor on competencia.actor_id = actor.id
+    left join director on competencia.director_id = director.id where competencia.id = ${idCompetencia};`
+
+    conexion.query(sql, function(error, resultado, fields){
+        res.json(resultado[0]);
+    })
+}
+
 function obtenerPeliculas(req, res){
     let idCompetencia = req.params.id;
 
@@ -30,7 +41,7 @@ function obtenerPeliculas(req, res){
 function recibirVoto(req, res){
     let idCompetencia = req.params.id
     let idPelicula = req.body.idPelicula;
-    //console.log(`Entre a la funcion voto. El id de la peli es ${idPelicula} y el la competencia es ${idCompetencia}`)
+
 
     conexion.query(`SELECT id FROM competencia WHERE id = ${idCompetencia}`, function(error, competencia){
         if(competencia.length == 0){
@@ -93,38 +104,32 @@ function obtenerActores(req, res){
 }
 
 function nuevaCompetencia(req, res){
+    console.log(req.body)
     let nueva_competencia = req.body.nombre;
     let genero = req.body.genero;
     let director = req.body.director;
     let actor = req.body.actor;
-    let filtros = {}
+    let filtros = {};
+    let sql;
 
     if(req.body.nombre) filtros.nombre = nueva_competencia;
-    if(req.body.genero == 0) filtros.genero_id = null;
-    if(req.body.director == 0) filtros.director_id = null;
-    if(req.body.actor == 0) filtros.actor_id = null;
+    if(req.body.genero !== '0') filtros.genero_id = genero;
+    if(req.body.director !== '0') filtros.director_id = director;
+    if(req.body.actor !== '0') filtros.actor_id = actor;
 
-    let parcialQuery = `INSERT INTO competencia SET `;
-
-    if(nueva_competencia) parcialQuery += `nombre = "${filtros.nombre}"`;
-
-    if( genero || director || actor) parcialQuery += `, `
-
-    if (genero){
-        parcialQuery += `genero_id = ${genero}`
+    let columnas = "";
+    for( const filtroColumna in filtros){
+            columnas += `${filtroColumna}, `
     }
-    if (director){
-        if(genero) parcialQuery += `, `;
-        parcialQuery += `director_id = ${director}`;
+    columnas = columnas.slice(0,-2);
+
+    let valores = "";
+    for(const valorColumna in filtros){
+        valores += `"${filtros[valorColumna]}", `
     }
-    if(actor){
-        if(genero || director) parcialQuery += `, `;
-        parcialQuery += `actor_id = ${actor}`;
-    }
+    valores = valores.slice(0, -2);
 
-    console.log(parcialQuery);
-
-
+    sql = `INSERT INTO competencia (${columnas}) values (${valores});`
 
     conexion.query(`SELECT nombre FROM competencia WHERE nombre = "${nueva_competencia}"`, function(error, resultado, fields){
         if(resultado.length !== 0){
@@ -133,9 +138,9 @@ function nuevaCompetencia(req, res){
         if(nueva_competencia <= 0 || nueva_competencia == null){
             return res.status(422).json('Para crear una competencia deberas ingresar un titulo!');
         }
-        conexion.query(parcialQuery, function(err, result, field){
-            console.log(result);
-            res.json(result);
+        conexion.query(sql, function(error, resultado, fields){
+            console.log(resultado);
+            res.json(resultado)
         });
     });
 }
@@ -178,6 +183,7 @@ function editarCompetencia(req, res){
 
 module.exports = {
     listarCompetencias : listarCompetencias,
+    obtenerCompetencia: obtenerCompetencia,
     obtenerPeliculas: obtenerPeliculas,
     recibirVoto: recibirVoto,
     calcularResultados: calcularResultados,
