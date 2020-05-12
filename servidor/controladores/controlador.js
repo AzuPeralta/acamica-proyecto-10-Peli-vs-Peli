@@ -16,14 +16,13 @@ function obtenerCompetencia(req, res){
 
     conexion.query(sql, function(error, resultado, fields){
         res.json(resultado[0]);
-    })
+    });
 }
 
 function obtenerPeliculas(req, res){
     let idCompetencia = req.params.id;
 
     conexion.query(`SELECT * FROM competencia WHERE id = ${idCompetencia}`, function(error, resultado, fields){
-        console.log(resultado)
         if(resultado.length == 0){
             return res.status(404).json('No existe la competencia');
         }
@@ -34,9 +33,22 @@ function obtenerPeliculas(req, res){
 
         if(genero && director && actor) {
             sql += `competencia JOIN pelicula ON pelicula.genero_id = competencia.genero_id JOIN director_pelicula ON pelicula.id = director_pelicula.pelicula_id
-        JOIN actor_pelicula ON pelicula.id = actor_pelicula.pelicula_id
-        WHERE competencia.id = ${idCompetencia} and director_pelicula.director_id = ${director} and actor_pelicula.actor_id = ${actor} `}
+            JOIN actor_pelicula ON pelicula.id = actor_pelicula.pelicula_id
+            WHERE competencia.id = ${idCompetencia} and director_pelicula.director_id = ${director} and actor_pelicula.actor_id = ${actor} `}
 
+        else if(genero && actor){
+            sql += `competencia JOIN pelicula on pelicula.genero_id = competencia.genero_id
+            join actor_pelicula on pelicula.id = actor_pelicula.pelicula_id
+            WHERE pelicula.genero_id = ${genero} and actor_pelicula.actor_id = ${actor} and competencia.id = ${idCompetencia} `
+        }
+        else if(genero && director){
+            sql += `competencia JOIN pelicula on pelicula.genero_id = competencia.genero_id join director_pelicula on pelicula.id = director_pelicula.pelicula_id
+            WHERE competencia.genero_id = ${genero} and director_pelicula.director_id = ${director} `
+        }
+        else if(actor && director){
+            sql += `pelicula join actor_pelicula on pelicula.id = actor_pelicula.pelicula_id join director_pelicula on pelicula.id = director_pelicula.pelicula_id
+            join competencia on competencia.actor_id = actor_pelicula.actor_id where actor_pelicula.actor_id = ${actor} and director_pelicula.director_id = ${director} `
+        }
         else if(genero){
             sql += `competencia JOIN pelicula on pelicula.genero_id = competencia.genero_id WHERE competencia.genero_id = ${genero} `
         }
@@ -48,27 +60,9 @@ function obtenerPeliculas(req, res){
             sql += `pelicula join actor_pelicula on pelicula.id = actor_pelicula.pelicula_id join competencia on competencia.actor_id = actor_pelicula.actor_id
             where actor_pelicula.actor_id = ${actor} `
         }
-        else if(genero && actor){
-            sql += `competencia JOIN pelicula on pelicula.genero_id = competencia.genero_id join actor_pelicula on pelicula.id = actor_pelicula.pelicula_id
-            WHERE competencia.genero_id = ${genero} and actor_pelicula.actor_id = ${actor} `
-        }
-        else if(genero && director){
-            sql += `competencia JOIN pelicula on pelicula.genero_id = competencia.genero_id join director_pelicula on pelicula.id = director_pelicula.pelicula_id
-            WHERE competencia.genero_id = ${genero} and director_pelicula.director_id = ${director} `
-        }
-        else if(actor && director){
-            sql += `pelicula join actor_pelicula on pelicula.id = actor_pelicula.pelicula_id join director_pelicula on pelicula.id = director_pelicula.pelicula_id
-            join competencia on competencia.actor_id = actor_pelicula.actor_id where actor_pelicula.actor_id = ${actor} and director_pelicula.director_id = ${director} `
-        }
 
         sql += `ORDER BY RAND();`
         conexion.query(sql, function(err, result, field){
-            //FALTA VALIDACION POR MENOS DE DOS OPCIONES PARA VOTAR. COMO SE ENVIA MENSAJE A CLIENTE? POR CONSOLA? SE PUEDE PONER UN ALERT?
-            if(result.length < 2){
-                console.log("No se puede votar esta competencia por falta de opciones!");
-                return res.status(500).json('No es posible crear esta competencia');
-                //return res.status(500).send("No se puede votar esta competencia por falta de opciones!")
-                }
             let nombreCompetencia = result[0].nombre
             let response = {
                 'peliculas': result,
@@ -144,7 +138,6 @@ function obtenerActores(req, res){
 }
 
 function nuevaCompetencia(req, res){
-    console.log(req.body)
     let nueva_competencia = req.body.nombre;
     let genero = req.body.genero;
     let director = req.body.director;
@@ -169,20 +162,44 @@ function nuevaCompetencia(req, res){
     }
     valores = valores.slice(0, -2);
 
-    sql = `INSERT INTO competencia (${columnas}) values (${valores});`
+    let queryComprobacion = `SELECT distinct pelicula.id from pelicula JOIN actor_pelicula ON pelicula.id = actor_pelicula.pelicula_id 
+    JOIN director_pelicula ON pelicula.id = director_pelicula.pelicula_id
+    JOIN genero on pelicula.genero_id = genero.id`;
+
+    if (genero || director || actor || nombre) queryComprobacion += ` where `;
+
+    if (genero !== '0') {
+        queryComprobacion += `pelicula.genero_id = ${genero} `;
+    }
+
+    if (director !== '0') {
+        if(genero !== '0') queryComprobacion += `and `;
+        queryComprobacion += `director_pelicula.director_id = ${director} `;
+    }
+
+    if (actor !== '0') {
+        if(director !== '0' || genero !== '0') queryComprobacion += `and `;
+        queryComprobacion += `actor_pelicula.actor_id = ${actor} `;
+    }
 
     conexion.query(`SELECT nombre FROM competencia WHERE nombre = "${nueva_competencia}"`, function(error, resultado, fields){
         if(resultado.length !== 0){
             return res.status(422).json('Esa competencia ya existe!');
         }
         if(nueva_competencia <= 0 || nueva_competencia == null){
-            return res.status(422).json('Para crear una competencia deberas ingresar un titulo!');
+            return res.status(422).json('Para crear una competencia deberas ingresar un titulo!'); 
         }
-        conexion.query(sql, function(error, resultado, fields){
-            console.log(resultado);
-            res.json(resultado)
+            conexion.query(queryComprobacion, function(err, result, field){
+                if(result.length < 2){
+                    console.log("No se puede crear esta competencia por falta de opciones!");
+                    return res.status(422).json('No es posible crear esta competencia por falta de opciones!');
+                }
+                conexion.query(`INSERT INTO competencia (${columnas}) values (${valores});`, function(error, resultado, fields){
+                    res.json(resultado)
+                });
         });
-    });
+     })
+
 }
 
 function reiniciarVotos(req, res){
@@ -213,7 +230,6 @@ function eliminarCompetencia(req, res){
 function editarCompetencia(req, res){
     let idCompetencia = req.params.id;
     let nuevaInfo = req.body.nombre;
-    console.log(nuevaInfo);
     let sql = `UPDATE competencia SET nombre = "${nuevaInfo}" WHERE id = ${idCompetencia};`
 
     conexion.query(sql, function(error, resultado, fields){
