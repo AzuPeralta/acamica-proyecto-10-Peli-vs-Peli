@@ -201,7 +201,7 @@ function nuevaCompetencia(req, res){
                 }
                 else if(nueva_competencia !== null && !genero && !actor && !director){
                     conexion.query(`INSERT INTO competencia (${columnas}) values (${valores});`, function(error, resultado, fields){
-                        res.json(resultado)  
+                        res.json(resultado)
                     })
                 }
                 conexion.query(`INSERT INTO competencia (${columnas}) values (${valores});`, function(error, resultado, fields){
